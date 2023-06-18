@@ -35,6 +35,22 @@ def draw_cubie(draw, o, v_x, v_y, colors, outline, width):
             color = color_map[colors[c_i]]
             draw.polygon([(x, y), a, vec_add(a, v_y), vec_add((x, y), v_y)], fill=color, outline=outline, width=width)
 
+def draw_changed_cubie(draw, o, v_x, v_y, pattern, true_color, false_color, outline, width):
+    for y_i in range(3):
+        for x_i in range(3):
+            x = o[0] + v_x[0] * x_i + v_y[0] * y_i
+            y = o[1] + v_x[1] * x_i + v_y[1] * y_i
+
+            a = vec_add((x, y), v_x)
+
+            c_i = x_i + y_i * 3
+            if pattern[c_i]:
+                color = true_color
+            else:
+                color = false_color
+
+            draw.polygon([(x, y), a, vec_add(a, v_y), vec_add((x, y), v_y)], fill=color, outline=outline, width=width)
+
 def draw_cube(cube, img_width, margin, bg_color="gray", is_show_mirror=True):
     img = Image.new("RGB", (img_width + margin*2, img_width + margin*2), bg_color)
     draw = ImageDraw.Draw(img)
@@ -94,5 +110,135 @@ def draw_cube(cube, img_width, margin, bg_color="gray", is_show_mirror=True):
         draw_cubie(draw, ml_ufl, ml_x, ml_y, cube.get_left_colors(), fill, width)
         draw_cubie(draw, mb_ubl, mb_x, mb_y, cube.get_back_colors(), fill, width)
         draw_cubie(draw, md_dbl, md_x, md_y, cube.get_down_colors(), fill, width)
+
+    return img
+
+def draw_changed_cube(changed, img_width, margin, fg_color, bg_color="gray", is_show_mirror=True):
+    img = Image.new("RGB", (img_width + margin*2, img_width + margin*2), bg_color)
+    draw = ImageDraw.Draw(img)
+
+    fill = "black"
+    width = 4
+
+    dfr = convert_point((0, 0), img_width, margin)
+    dfl = convert_point((-Root3, 1), img_width, margin)
+    ufl = convert_point((-Root3, 3), img_width, margin)
+    ubl = convert_point((0, 4), img_width, margin)
+    ubr = convert_point((Root3, 3), img_width, margin)
+    dbr = convert_point((Root3, 1), img_width, margin)
+    ufr = convert_point((0, 2), img_width, margin)
+
+    # mirror
+    mg = 0.1
+
+    ml_ufl = convert_point((-Root3 * 2 - mg, 4), img_width, margin)
+    ml_ubl = convert_point((-Root3 - mg, 5), img_width, margin)
+    ml_dbl = convert_point((-Root3 - mg, 3), img_width, margin)
+    ml_dfl = convert_point((-Root3 * 2 - mg, 2), img_width, margin)
+
+    md_dbl = convert_point((0, 0 - mg), img_width, margin)
+    md_dbr = convert_point((Root3, -1 - mg), img_width, margin)
+    md_dfr = convert_point((0, -2 - mg), img_width, margin)
+    md_dfl = convert_point((-Root3, -1 - mg), img_width, margin)
+
+    mb_ubl = convert_point((Root3 + mg, 5), img_width, margin)
+    mb_ubr = convert_point((Root3 * 2 + mg, 4), img_width, margin)
+    mb_dbr = convert_point((Root3 * 2 + mg, 2), img_width, margin)
+    mb_dbl = convert_point((Root3 + mg, 3), img_width, margin)
+
+    u_x = create_cubie_vec(ubl, ubr)
+    u_y = create_cubie_vec(ubl, ufl)
+
+    f_x = create_cubie_vec(ufl, ufr)
+    f_y = create_cubie_vec(ufl, dfl)
+
+    r_x = create_cubie_vec(ufr, ubr)
+    r_y = create_cubie_vec(ufr, dfr)
+
+    ml_x = create_cubie_vec(ml_ufl, ml_ubl)
+    ml_y = create_cubie_vec(ml_ufl, ml_dfl)
+
+    mb_x = create_cubie_vec(mb_ubl, mb_ubr)
+    mb_y = create_cubie_vec(mb_ubl, mb_dbl)
+
+    md_x = create_cubie_vec(md_dbl, md_dbr)
+    md_y = create_cubie_vec(md_dbl, md_dfl)
+
+    draw_changed_cubie(draw, ubl, u_x, u_y, changed[0], fg_color, bg_color, fill, width)
+    draw_changed_cubie(draw, ufl, f_x, f_y, changed[1], fg_color, bg_color, fill, width)
+    draw_changed_cubie(draw, ufr, r_x, r_y, changed[2], fg_color, bg_color, fill, width)
+
+    if is_show_mirror:
+        draw_changed_cubie(draw, ml_ufl, ml_x, ml_y, changed[4], fg_color, bg_color, fill, width)
+        draw_changed_cubie(draw, mb_ubl, mb_x, mb_y, changed[3], fg_color, bg_color, fill, width)
+        draw_changed_cubie(draw, md_dbl, md_x, md_y, changed[5], fg_color, bg_color, fill, width)
+
+    return img
+
+def draw_changed_cubes(cube1, cube2, img_width, margin, fg_color, bg_color="gray", is_show_mirror=True):
+    img = Image.new("RGB", (img_width + margin*2, img_width + margin*2), bg_color)
+    draw = ImageDraw.Draw(img)
+
+    fill = "black"
+    width = 4
+
+    dfr = convert_point((0, 0), img_width, margin)
+    dfl = convert_point((-Root3, 1), img_width, margin)
+    ufl = convert_point((-Root3, 3), img_width, margin)
+    ubl = convert_point((0, 4), img_width, margin)
+    ubr = convert_point((Root3, 3), img_width, margin)
+    dbr = convert_point((Root3, 1), img_width, margin)
+    ufr = convert_point((0, 2), img_width, margin)
+
+    # mirror
+    mg = 0.1
+
+    ml_ufl = convert_point((-Root3 * 2 - mg, 4), img_width, margin)
+    ml_ubl = convert_point((-Root3 - mg, 5), img_width, margin)
+    ml_dbl = convert_point((-Root3 - mg, 3), img_width, margin)
+    ml_dfl = convert_point((-Root3 * 2 - mg, 2), img_width, margin)
+
+    md_dbl = convert_point((0, 0 - mg), img_width, margin)
+    md_dbr = convert_point((Root3, -1 - mg), img_width, margin)
+    md_dfr = convert_point((0, -2 - mg), img_width, margin)
+    md_dfl = convert_point((-Root3, -1 - mg), img_width, margin)
+
+    mb_ubl = convert_point((Root3 + mg, 5), img_width, margin)
+    mb_ubr = convert_point((Root3 * 2 + mg, 4), img_width, margin)
+    mb_dbr = convert_point((Root3 * 2 + mg, 2), img_width, margin)
+    mb_dbl = convert_point((Root3 + mg, 3), img_width, margin)
+
+    u_x = create_cubie_vec(ubl, ubr)
+    u_y = create_cubie_vec(ubl, ufl)
+
+    f_x = create_cubie_vec(ufl, ufr)
+    f_y = create_cubie_vec(ufl, dfl)
+
+    r_x = create_cubie_vec(ufr, ubr)
+    r_y = create_cubie_vec(ufr, dfr)
+
+    ml_x = create_cubie_vec(ml_ufl, ml_ubl)
+    ml_y = create_cubie_vec(ml_ufl, ml_dfl)
+
+    mb_x = create_cubie_vec(mb_ubl, mb_ubr)
+    mb_y = create_cubie_vec(mb_ubl, mb_dbl)
+
+    md_x = create_cubie_vec(md_dbl, md_dbr)
+    md_y = create_cubie_vec(md_dbl, md_dfl)
+
+    p = [a and b for a, b in zip(cube1.get_up_changed(), cube2.get_up_changed())]
+    draw_changed_cubie(draw, ubl, u_x, u_y, p, fg_color, bg_color, fill, width)
+    p = [a and b for a, b in zip(cube1.get_front_changed(), cube2.get_front_changed())]
+    draw_changed_cubie(draw, ufl, f_x, f_y, p, fg_color, bg_color, fill, width)
+    p = [a and b for a, b in zip(cube1.get_right_changed(), cube2.get_right_changed())]
+    draw_changed_cubie(draw, ufr, r_x, r_y, p, fg_color, bg_color, fill, width)
+
+    if is_show_mirror:
+        p = [a and b for a, b in zip(cube1.get_left_changed(), cube2.get_left_changed())]
+        draw_changed_cubie(draw, ml_ufl, ml_x, ml_y, p, fg_color, bg_color, fill, width)
+        p = [a and b for a, b in zip(cube1.get_back_changed(), cube2.get_back_changed())]
+        draw_changed_cubie(draw, mb_ubl, mb_x, mb_y, p, fg_color, bg_color, fill, width)
+        p = [a and b for a, b in zip(cube1.get_down_changed(), cube2.get_down_changed())]
+        draw_changed_cubie(draw, md_dbl, md_x, md_y, p, fg_color, bg_color, fill, width)
 
     return img

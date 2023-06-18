@@ -177,6 +177,114 @@ class Cube:
 
         return ""
 
+    def get_changed(self):
+        oc = [False] * 6
+        cc = [False] * 8
+        ec = [False] * 12
+
+        for i in range(6):
+            oc[i] = self.op[i] != i
+
+        for i in range(8):
+            cc[i] = self.cp[i] != i or self.co[i] != 0
+
+        for i in range(12):
+            ec[i] = self.ep[i] != i or self.eo[i] != 0
+
+        return [oc, cc, ec]
+
+    def get_changed_list(self):
+        return [self.get_up_changed(), self.get_front_changed(), self.get_right_changed(),
+                self.get_back_changed(), self.get_left_changed(), self.get_down_changed()]
+
+    def get_changed_list2(self, other):
+        return [self.get_up_changed2(other), self.get_front_changed2(other), self.get_right_changed2(other),
+                self.get_back_changed2(other), self.get_left_changed2(other), self.get_down_changed2(other)]
+
+    def get_up_changed(self):
+        oc, cc, ec = self.get_changed()
+
+        return [cc[0], ec[4], cc[1], ec[7], oc[0], ec[5], cc[3], ec[6], cc[2]]
+
+    def get_up_changed2(self, other):
+        oc1, cc1, ec1 = self.get_changed()
+        oc2, cc2, ec2 = other.get_changed()
+        oc = [a and b for a, b in zip(oc1, oc2)]
+        cc = [a and b for a, b in zip(cc1, cc2)]
+        ec = [a and b for a, b in zip(ec1, ec2)]
+
+        return [cc[self.cp[0]], ec[self.ep[4]], cc[self.cp[1]], ec[self.ep[7]], oc[self.op[0]], ec[self.ep[5]], cc[self.cp[3]], ec[self.ep[6]], cc[self.cp[2]]]
+
+    def get_front_changed(self):
+        oc, cc, ec = self.get_changed()
+
+        return [cc[3], ec[6], cc[2], ec[3], oc[1], ec[2], cc[7], ec[10], cc[6]]
+
+    def get_front_changed2(self, other):
+        oc1, cc1, ec1 = self.get_changed()
+        oc2, cc2, ec2 = other.get_changed()
+        oc = [a and b for a, b in zip(oc1, oc2)]
+        cc = [a and b for a, b in zip(cc1, cc2)]
+        ec = [a and b for a, b in zip(ec1, ec2)]
+
+        return [cc[self.cp[3]], ec[self.ep[6]], cc[self.cp[2]], ec[self.ep[3]], oc[self.op[1]], ec[self.ep[2]], cc[self.cp[7]], ec[self.ep[10]], cc[self.cp[6]]]
+
+    def get_right_changed(self):
+        oc, cc, ec = self.get_changed()
+
+        return [cc[2], ec[5], cc[1], ec[2], oc[2], ec[1], cc[6], ec[9], cc[5]]
+
+    def get_right_changed2(self, other):
+        oc1, cc1, ec1 = self.get_changed()
+        oc2, cc2, ec2 = other.get_changed()
+        oc = [a and b for a, b in zip(oc1, oc2)]
+        cc = [a and b for a, b in zip(cc1, cc2)]
+        ec = [a and b for a, b in zip(ec1, ec2)]
+
+        return [cc[self.cp[2]], ec[self.ep[5]], cc[self.cp[1]], ec[self.ep[2]], oc[self.op[2]], ec[self.ep[1]], cc[self.cp[6]], ec[self.ep[9]], cc[self.cp[5]]]
+
+    def get_left_changed(self):
+        oc, cc, ec = self.get_changed()
+
+        return [cc[3], ec[7], cc[0], ec[3], oc[4], ec[0], cc[7], ec[11], cc[4]]
+
+    def get_left_changed2(self, other):
+        oc1, cc1, ec1 = self.get_changed()
+        oc2, cc2, ec2 = other.get_changed()
+        oc = [a and b for a, b in zip(oc1, oc2)]
+        cc = [a and b for a, b in zip(cc1, cc2)]
+        ec = [a and b for a, b in zip(ec1, ec2)]
+
+        return [cc[self.cp[3]], ec[self.ep[7]], cc[self.cp[0]], ec[self.ep[3]], oc[self.op[4]], ec[self.ep[0]], cc[self.cp[7]], ec[self.ep[11]], cc[self.cp[4]]]
+
+    def get_back_changed(self):
+        oc, cc, ec = self.get_changed()
+
+        return [cc[0], ec[4], cc[1], ec[0], oc[3], ec[1], cc[4], ec[8], cc[5]]
+
+    def get_back_changed2(self, other):
+        oc1, cc1, ec1 = self.get_changed()
+        oc2, cc2, ec2 = other.get_changed()
+        oc = [a and b for a, b in zip(oc1, oc2)]
+        cc = [a and b for a, b in zip(cc1, cc2)]
+        ec = [a and b for a, b in zip(ec1, ec2)]
+
+        return [cc[self.cp[0]], ec[self.ep[4]], cc[self.cp[1]], ec[self.ep[0]], oc[self.op[3]], ec[self.ep[1]], cc[self.cp[4]], ec[self.ep[8]], cc[self.cp[5]]]
+
+    def get_down_changed(self):
+        oc, cc, ec = self.get_changed()
+
+        return [cc[4], ec[8], cc[5], ec[11], oc[5], ec[9], cc[7], ec[10], cc[6]]
+
+    def get_down_changed2(self, other):
+        oc1, cc1, ec1 = self.get_changed()
+        oc2, cc2, ec2 = other.get_changed()
+        oc = [a and b for a, b in zip(oc1, oc2)]
+        cc = [a and b for a, b in zip(cc1, cc2)]
+        ec = [a and b for a, b in zip(ec1, ec2)]
+
+        return [cc[self.cp[4]], ec[self.ep[8]], cc[self.cp[5]], ec[self.ep[11]], oc[self.op[5]], ec[self.ep[9]], cc[self.cp[7]], ec[self.ep[10]], cc[self.cp[6]]]
+
     def get_up_colors(self):
         colors = [""] * 9
 
