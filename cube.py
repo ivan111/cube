@@ -47,6 +47,9 @@ class Cube:
         self.ep = ep
         self.eo = eo
 
+    def __repr__(self):
+        return ', '.join(["op=" + str(self.op), "cp=" + str(self.cp), "co=" + str(self.co), "ep=" + str(self.ep), "eo=" + str(self.eo)])
+
     @classmethod
     def solved(cls):
         return cls(list(range(6)), list(range(8)), [0] * 8, list(range(12)), [0] * 12)
@@ -70,6 +73,109 @@ class Cube:
                 print("unknown move command: [" + move_name + "]")
 
         return state
+
+    def __eq__(self, other):
+        return (self.op == other.op and
+            self.cp == other.cp and
+            self.co == other.co and
+            self.ep == other.ep and
+            self.eo == other.eo)
+
+    def get_up_pattern(self):
+        # corner 0, 1, 2, 3 edge 4, 5, 6, 7
+        # corner: 0 = up色なし, 1 = upがup色, 2 = upの時計周りの位置がup色, 3 = upの反時計周りの位置がup色
+        # edge: 0 = up色なし, 1 = upがup色, 2 = upでない面がup色
+        c = o_colors[self.op[0]] # up color
+
+        p = []
+
+        for i in range(4):
+            res = 0
+            for k in range(3):
+                if c == c_colors[self.cp[i]][(self.co[i] + k) % 3]:
+                    res = k + 1
+                    break
+
+            p.append(res)
+
+        for i in range(4):
+            res = 0
+            for k in range(2):
+                if c == e_colors[self.ep[i+4]][(self.eo[i+4] + k) % 2]:
+                    res = k + 1
+                    break
+
+            p.append(res)
+
+        return p
+
+    # 上面の横側面のパターンを取得する
+    def get_up_side_pattern(self):
+        p1 = c_colors[self.cp[0]][(self.co[0] + 1) % 3]
+        p2 = c_colors[self.cp[0]][(self.co[0] + 2) % 3]
+        p3 = e_colors[self.ep[4]][(self.eo[4] + 1) % 2]
+        p4 = c_colors[self.cp[1]][(self.co[1] + 1) % 3]
+        p5 = c_colors[self.cp[1]][(self.co[1] + 2) % 3]
+        p6 = e_colors[self.ep[5]][(self.eo[5] + 1) % 2]
+        p7 = c_colors[self.cp[2]][(self.co[2] + 1) % 3]
+        p8 = c_colors[self.cp[2]][(self.co[2] + 2) % 3]
+        p9 = e_colors[self.ep[6]][(self.eo[6] + 1) % 2]
+        p10 = c_colors[self.cp[3]][(self.co[3] + 1) % 3]
+        p11 = c_colors[self.cp[3]][(self.co[3] + 2) % 3]
+        p12 = e_colors[self.ep[7]][(self.eo[7] + 1) % 2]
+
+        return [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12]
+
+    def get_oll_number(self):
+        for i in range(1, len(oll_notes)):
+            state = moves["OLL-" + str(i) + "'"]
+
+            for k in range(4):
+                if self.get_up_pattern() == state.get_up_pattern():
+                    return i
+
+                state = state.apply_moves("U")
+
+        return 0
+
+    def get_oll_name(self):
+        for i in range(1, len(oll_notes)):
+            state = moves["OLL-" + str(i) + "'"]
+
+            for k in range(4):
+                if self.get_up_pattern() == state.get_up_pattern():
+                    if k == 0:
+                        return str(i)
+                    elif k == 1:
+                        return str(i) + "_U"
+                    elif k == 2:
+                        return str(i) + "_U2"
+                    else:
+                        return str(i) + "_U'"
+
+                state = state.apply_moves("U")
+
+        return 0
+
+    U_MAP = [0, 2, 3, 4, 1, 5]  # get_up_side_patternで取得した側面の色リストの色をUして、色を変える
+
+    def get_pll_name(self):
+        for name in pll_names:
+            state = moves[name + "'"]
+
+            for k in range(4):
+                p = self.get_up_side_pattern()
+                p1 = state.get_up_side_pattern()
+                p2 = [self.U_MAP[p] for p in p1]
+                p3 = [self.U_MAP[p] for p in p2]
+                p4 = [self.U_MAP[p] for p in p3]
+
+                if p == p1 or p == p2 or p == p3 or p == p4:
+                    return name
+
+                state = state.apply_moves("U")
+
+        return ""
 
     def get_up_colors(self):
         colors = [""] * 9
@@ -326,6 +432,20 @@ moves["Dw"] = cube.apply_moves("D E")
 moves["Bw"] = cube.apply_moves("B S S S")
 moves["Lw"] = cube.apply_moves("L M")
 
+
+def get_prime_move(mv):
+    solved_cube = Cube.solved()
+
+    state0 = solved_cube.apply_move(mv)
+    state = state0
+    prev = state0
+
+    while solved_cube != state:
+        prev = state
+        state = state.apply_move(mv)
+
+    return prev
+
 move_names = []
 faces = list(moves.keys())
 
@@ -338,24 +458,119 @@ moves["sexy_move"] = cube.apply_moves("R U R' U'")
 moves["sune"] = cube.apply_moves("R U R' U R U2 R'")
 moves["anti_sune"] = cube.apply_moves("R U2 R' U' R U' R'")
 
-moves["PLL-Aa"] = cube.apply_moves("x' R2 D2 R' U' R D2 R' U R' x")
-moves["PLL-Ab"] = cube.apply_moves("x' R U' R D2 R' U R D2 R2 x")
-moves["PLL-F"] = cube.apply_moves("R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R")
-moves["PLL-Ga"] = cube.apply_moves("R2 U R' U R' U' R U' R2 U' D R' U R D' U")
-moves["PLL-Gb"] = cube.apply_moves("F' U' F R2 Uw R' U R U' R Uw' R2")
-moves["PLL-Gc"] = cube.apply_moves("R2 F2 R U2 R U2 R' F R U R' U' R' F R2")
-moves["PLL-Gd"] = cube.apply_moves("R2 F' R U R U' R' F' R U2 R' U2 R' F2 R2")
-moves["PLL-Ja"] = cube.apply_moves("L U' R' U L' U2 R U' R' U2 R")
-moves["PLL-Jb"] = cube.apply_moves("R U R' F' R U R' U' R' F R2 U' R' U'")
-moves["PLL-Ra"] = cube.apply_moves("R U' R' U' R U R D R' U' R D' R' U2 R' U'")
-moves["PLL-Rb"] = cube.apply_moves("R' U2 R U2 R' F R U R' U' R' F' R2 U'")
-moves["PLL-T"] = cube.apply_moves("R U R' U' R' F R2 U' R' U' R U R' F'")
-moves["PLL-E"] = cube.apply_moves("x' R U' R' D R U R' D' R U R' D R U' R' D' x")
-moves["PLL-Na"] = cube.apply_moves("R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'")
-moves["PLL-Nb"] = cube.apply_moves("R' U R U' R' F' U' F R U R' F R' F' R U' R")
-moves["PLL-V"] = cube.apply_moves("R' U R U' R' Fw' U' R U2 R' U' R U' R' Fw R")
-moves["PLL-Y"] = cube.apply_moves("F R U' R' U' R U R' F' R U R' U' R' F R F'")
-moves["PLL-H"] = cube.apply_moves("M2 U M2 U2 M2 U M2")
-moves["PLL-Ua"] = cube.apply_moves("R U' R U R U R U' R' U' R2")
-moves["PLL-Ub"] = cube.apply_moves("R2 U R U R' U' R' U' R' U R'")
-moves["PLL-Z"] = cube.apply_moves("U' M' U M2 U M2 U M' U2 M2")
+pll_names = ["PLL-Aa", "PLL-Ab", "PLL-F", "PLL-Ga", "PLL-Gb", "PLL-Gc", "PLL-Gd",
+             "PLL-Ja", "PLL-Jb", "PLL-Ra", "PLL-Rb", "PLL-T", "PLL-E", "PLL-Na",
+             "PLL-Nb", "PLL-V", "PLL-Y", "PLL-H", "PLL-Ua", "PLL-Ub", "PLL-Z"]
+
+pll_notes = {}
+
+pll_notes["PLL-Aa"] = "x' R2 D2 R' U' R D2 R' U R' x"
+pll_notes["PLL-Ab"] = "x' R U' R D2 R' U R D2 R2 x"
+pll_notes["PLL-F"] = "R' U' F' R U R' U' R' F R2 U' R' U' R U R' U R"
+pll_notes["PLL-Ga"] = "R2 U R' U R' U' R U' R2 U' D R' U R D' U"
+pll_notes["PLL-Gb"] = "F' U' F R2 Uw R' U R U' R Uw' R2"
+pll_notes["PLL-Gc"] = "R2 F2 R U2 R U2 R' F R U R' U' R' F R2"
+pll_notes["PLL-Gd"] = "R2 F' R U R U' R' F' R U2 R' U2 R' F2 R2"
+pll_notes["PLL-Ja"] = "L U' R' U L' U2 R U' R' U2 R"
+pll_notes["PLL-Jb"] = "R U R' F' R U R' U' R' F R2 U' R' U'"
+pll_notes["PLL-Ra"] = "R U' R' U' R U R D R' U' R D' R' U2 R' U'"
+pll_notes["PLL-Rb"] = "R' U2 R U2 R' F R U R' U' R' F' R2 U'"
+pll_notes["PLL-T"] = "R U R' U' R' F R2 U' R' U' R U R' F'"
+pll_notes["PLL-E"] = "x' R U' R' D R U R' D' R U R' D R U' R' D' x"
+pll_notes["PLL-Na"] = "R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'"
+pll_notes["PLL-Nb"] = "R' U R U' R' F' U' F R U R' F R' F' R U' R"
+pll_notes["PLL-V"] = "R' U R U' R' Fw' U' R U2 R' U' R U' R' Fw R"
+pll_notes["PLL-Y"] = "F R U' R' U' R U R' F' R U R' U' R' F R F'"
+pll_notes["PLL-H"] = "M2 U M2 U2 M2 U M2"
+pll_notes["PLL-Ua"] = "R U' R U R U R U' R' U' R2"
+pll_notes["PLL-Ub"] = "R2 U R U R' U' R' U' R' U R'"
+pll_notes["PLL-Z"] = "U' M' U M2 U M2 U M' U2 M2"
+
+for name in pll_names:
+    moves[name] = cube.apply_moves(pll_notes[name])
+
+moves["PLL-Aa'"] = moves["PLL-Ab"]
+moves["PLL-Ab'"] = moves["PLL-Aa"]
+moves["PLL-F'"] = moves["PLL-F"]
+moves["PLL-Ga'"] = moves["PLL-Gb"]
+moves["PLL-Gb'"] = moves["PLL-Ga"]
+moves["PLL-Gc'"] = moves["PLL-Gd"]
+moves["PLL-Gd'"] = moves["PLL-Gc"]
+moves["PLL-Ja'"] = moves["PLL-Ja"]
+moves["PLL-Jb'"] = moves["PLL-Jb"]
+moves["PLL-Ra'"] = moves["PLL-Ra"]
+moves["PLL-Rb'"] = moves["PLL-Rb"]
+moves["PLL-T'"] = moves["PLL-T"]
+moves["PLL-E'"] = moves["PLL-E"]
+moves["PLL-Na'"] = moves["PLL-Na"]
+moves["PLL-Nb'"] = moves["PLL-Nb"]
+moves["PLL-V'"] = moves["PLL-V"]
+moves["PLL-Y'"] = moves["PLL-Y"]
+moves["PLL-H'"] = moves["PLL-H"]
+moves["PLL-Ua'"] = moves["PLL-Ub"]
+moves["PLL-Ub'"] = moves["PLL-Ua"]
+moves["PLL-Z'"] = moves["PLL-Z"]
+
+oll_notes = [""] * 58
+
+oll_notes[1] = "R U2 R2 F R F' U2 R' F R F'"
+oll_notes[2] = "F R U R' U' F' Fw R U R' U' Fw'"
+oll_notes[3] = "Fw R U R' U' Fw' U' F R U R' U' F'"
+oll_notes[4] = "Fw R U R' U' Fw' U F R U R' U' F'"
+oll_notes[5] = "Rw' U2 R U R' U Rw"
+oll_notes[6] = "Rw U2 R' U' R U' Rw'"
+oll_notes[7] = "Rw U R' U R U2 Rw'"
+oll_notes[8] = "Rw' U' R U' R' U2 Rw"
+oll_notes[9] = "R U R' U' R' F R2 U R' U' F'"
+oll_notes[10] = "R U R' U R' F R F' R U2 R'"
+oll_notes[11] = "Rw' R2 U R' U R U2 R' U M'"
+oll_notes[12] = "F R U R' U' F' U F R U R' U' F'"
+oll_notes[13] = "F U R U' R2 F' R U R U' R'"
+oll_notes[14] = "Rw U R' U' Rw' F R2 U R' U' F'"
+oll_notes[15] = "Rw' U' Rw R' U' R U Rw' U Rw"
+oll_notes[16] = "Rw U Rw' R U R' U' Rw U' Rw'"
+oll_notes[17] = "R U R' U R' F R F' U2 R' F R F'"
+oll_notes[18] = "R U2 R2 F R F' U2 M' U R U' Rw'"
+oll_notes[19] = "Rw' R U R U R' U' Rw R2 F R F'"
+oll_notes[20] = "Rw' R U R U R' U' M2 U R U' Rw'"
+oll_notes[21] = "R' U' R U' R' U R U' R' U2 R"
+oll_notes[22] = "R U2 R2 U' R2 U' R2 U2 R"
+oll_notes[23] = "R2 D R' U2 R D' R' U2 R'"
+oll_notes[24] = "Rw U R' U' Rw' F R F'"
+oll_notes[25] = "x U R' U' L U R U' Rw'"
+oll_notes[26] = "L' U' L U' L' U2 L"
+oll_notes[27] = "R U R' U R U2 R'"
+oll_notes[28] = "Rw U R' U' Rw' R U R U' R'"
+oll_notes[29] = "R' F R F' R U2 R' U' F' U' F"
+oll_notes[30] = "F R' F R2 U' R' U' R U R' F2"
+oll_notes[31] = "R' U' F U R U' R' F' R"
+oll_notes[32] = "S R U R' U' R' F R Fw'"
+oll_notes[33] = "R U R' U' R' F R F'"
+oll_notes[34] = "R U R2 U' R' F R U R U' F'"
+oll_notes[35] = "R U2 R2 F R F' R U2 R'"
+oll_notes[36] = "R U R' U' F' U2 F U R U R'"
+oll_notes[37] = "F R U' R' U' R U R' F'"
+oll_notes[38] = "R U R' U R U' R' U' R' F R F'"
+oll_notes[39] = "R U R' F' U' F U R U2 R'"
+oll_notes[40] = "R' F R U R' U' F' U R"
+oll_notes[41] = "R U R' U R U2 R' F R U R' U' F'"
+oll_notes[42] = "R' U' R U' R' U2 R F R U R' U' F'"
+oll_notes[43] = "R' U' F' U F R"
+oll_notes[44] = "Fw R U R' U' Fw'"
+oll_notes[45] = "F R U R' U' F'"
+oll_notes[46] = "R' U' R' F R F' U R"
+oll_notes[47] = "F' L' U' L U L' U' L U F"
+oll_notes[48] = "F R U R' U' R U R' U' F'"
+oll_notes[49] = "R B' R2 F R2 B R2 F' R"
+oll_notes[50] = "Rw' U Rw2 U' Rw2 U' Rw2 U Rw'"
+oll_notes[51] = "Fw R U R' U' R U R' U' Fw'"
+oll_notes[52] = "R' F' U' F U' R U R' U R"
+oll_notes[53] = "Rw' U' R U' R' U R U' R' U2 Rw"
+oll_notes[54] = "Rw U R' U R U' R' U R U2 Rw'"
+oll_notes[55] = "Rw U2 R2 F R F' U2 Rw' F R F'"
+oll_notes[56] = "Rw' U' Rw U' R' U R U' R' U R Rw' U Rw"
+oll_notes[57] = "R U R' U' M' U R U' Rw'"
+
+for i in range(1, len(oll_notes)):
+    moves["OLL-" + str(i)] = cube.apply_moves(oll_notes[i])
+    moves["OLL-" + str(i) + "'"] = get_prime_move(moves["OLL-" + str(i)])
